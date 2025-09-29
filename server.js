@@ -1,4 +1,9 @@
-const cheerio = require("cheerio");
+import express from "express";
+import fetch from "node-fetch";
+import cheerio from "cheerio";
+
+const app = express();
+app.use(express.json());
 
 app.post("/clean/full", async (req, res) => {
   const { url } = req.body;
@@ -7,16 +12,18 @@ app.post("/clean/full", async (req, res) => {
     const html = await response.text();
     const $ = cheerio.load(html);
 
-    // Buscar si hay <video>
-    const video = $("video").attr("src");
-    // O si hay iframe con la película
-    const iframe = $("iframe").attr("src");
+    // Buscar <video>
+    let encontrado = $("video").attr("src");
 
-    res.json({
-      original: url,
-      encontrado: video || iframe || "No encontrado"
-    });
+    // Si no hay, probar <iframe>
+    if (!encontrado) encontrado = $("iframe").attr("src");
+
+    res.json({ original: url, encontrado: encontrado || null });
   } catch (err) {
     res.status(500).json({ error: "Error al procesar la página", detalle: err.message });
   }
+});
+
+app.listen(3000, () => {
+  console.log("Servidor en http://localhost:3000");
 });
